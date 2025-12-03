@@ -1,0 +1,35 @@
+# Core Dependencies
+pandas==2.1.4
+numpy==1.24.4
+scikit-learn==1.3.2
+matplotlib==3.8.2
+seaborn==0.13.1
+joblib==1.3.2
+requests==2.31.0
+pyyaml==6.0.1
+
+# Forecasting
+prophet==1.1.5
+cmdstanpy==1.0.4
+
+# Torch CPU version ✅
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.0+cpu
+
+# Trend data
+pytrends==4.9.2
+
+# Telegram Alerts
+python-telegram-bot==20.7
+
+# PDF
+fpdf==1.7.2
+
+# Streamlit / Dashboard
+streamlit==1.30.0
+plotly==5.18.0
+
+# ✅ Airflow MUST use constraints!
+apache-airflow==2.7.1 --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.7.1/constraints-3.8.txt
+apache-airflow-providers-cncf-kubernetes==7.3.0
+apache-airflow-providers-docker==3.10.0

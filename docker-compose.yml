@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  webserver:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./src:/opt/airflow/src
+      - ./data:/opt/airflow/data      # ✅ Ensures container writes are reflected locally
+      - ./docker/requirements.txt:/requirements.txt
+    ports:
+      - "8080:8080"
+    command: webserver
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./src:/opt/airflow/src
+      - ./data:/opt/airflow/data      # ✅ Ensures container writes are reflected locally
+      - ./docker/requirements.txt:/requirements.txt
+    command: scheduler
+
+  airflow-init:
+    image: apache/airflow:2.7.1
+    depends_on:
+      - postgres
+    environment:
+      - _AIRFLOW_DB_UPGRADE=True
+      - _AIRFLOW_WWW_USER_CREATE=True
+      - _AIRFLOW_WWW_USER_USERNAME=admin
+      - _AIRFLOW_WWW_USER_PASSWORD=admin
+      - _AIRFLOW_WWW_USER_FIRSTNAME=Kawshik
+      - _AIRFLOW_WWW_USER_LASTNAME=Ramesh
+      - _AIRFLOW_WWW_USER_EMAIL=kawshikramesh@example.com
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+    entrypoint: /bin/bash
+    command: -c "airflow db migrate && airflow users create \
+                 --username admin \
+                 --firstname Kawshik \
+                 --lastname Ramesh \
+                 --role Admin \
+                 --email kawshikramesh@example.com \
+                 --password admin"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.streamlit
+    command: streamlit run src/dashboard.py --server.port=8501 --server.address=0.0.0.0
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data              # ✅ Ensures dashboard reads local file
+    ports:
+      - "8501:8501"
+    depends_on:
+      - webserver
+      - scheduler
+
+volumes:
+  postgres_data:

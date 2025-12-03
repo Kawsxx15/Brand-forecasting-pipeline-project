@@ -1,0 +1,15 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy your code and data
+COPY ./src ./src
+COPY ./data ./data
+COPY ./docker/requirements.txt ./requirements.txt
+
+# Install only dashboard dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "src/dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
